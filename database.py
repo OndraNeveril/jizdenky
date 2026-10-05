@@ -1,10 +1,18 @@
 import sqlite3
 from pathlib import Path
 
-DB_PATH = "data/database.db"
+DB_PATH = Path(__file__).parent / "data" / "database.db"
+SEED_PATH = Path(__file__).parent / "data" / "seed.sql"
 
 def get_connection():
     return sqlite3.connect(DB_PATH)
+
+def init_db():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    with get_connection() as conn:
+        with open(SEED_PATH, 'r', encoding='utf-8') as file:
+            conn.executescript(file.read())
 
 def pridat_jednorazovou(dopravce, datum, cas_od, odkud, kam, vlak, misto=None, doklad=None):
     with get_connection() as conn:
