@@ -101,6 +101,81 @@ def pridat_jednorazovou(parent):
 
     # Zadání informací
 
+    ttk.Label(
+        frame,
+        text='Dopravce:',
+        style='Ticket.TLabel'
+    ).pack(anchor='w')
+
+    dopravce = ttk.Combobox(
+        frame,
+        values=['ČD', 'Regiojet', 'Leoexpres', 'Arriva', 'Jiný'],
+        state='readonly'
+    )
+    dopravce.current(0)
+    dopravce.pack(fill='x', pady=(2, 10))
+
+    ttk.Label(
+        frame,
+        text='Datum:',
+        style='Ticket.TLabel'
+    ).pack(anchor='w')
+
+    datum = ttk.Entry(frame)
+    datum.insert(0, date.today().isoformat())
+    datum.pack(fill='x', pady=(2, 10))
+
+    ttk.Label(
+        frame,
+        text='Čas odjezdu:',
+        style='Ticket.TLabel'
+    ).pack(anchor='w')
+
+    cas_od = ttk.Entry(frame)
+    cas_od.pack(fill='x', pady=(2, 10))
+
+    ttk.Label(
+        frame,
+        text='Odkud:',
+        style='Ticket.TLabel'
+    ).pack(anchor='w')
+
+    odkud = ttk.Entry(frame)
+    odkud.pack(fill='x', pady=(2, 10))
+
+    ttk.Label(
+        frame,
+        text='Kam:',
+        style='Ticket.TLabel'
+    ).pack(anchor='w')
+
+    kam = ttk.Entry(frame)
+    kam.pack(fill='x', pady=(2, 10))
+
+    ttk.Label(
+        frame,
+        text='Vlak:',
+        style='Ticket.TLabel'
+    ).pack(anchor='w')
+
+    vlak = ttk.Entry(frame)
+    vlak.pack(fill='x', pady=(2, 10))
+
+    ttk.Label(
+        frame,
+        text='Místo:',
+        style='Ticket.TLabel'
+    ).pack(anchor='w')
+
+    misto = ttk.Entry(frame)
+    misto.pack(fill='x', pady=(2, 10))
+
+    ttk.Label(
+        frame,
+        text='Doklad:',
+        style='Ticket.TLabel'
+    ).pack(anchor='w')
+
     # Potvrzení/zrušení
 
     buttons = ttk.Frame(frame, style='Ticket.TFrame')
