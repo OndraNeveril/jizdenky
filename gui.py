@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
-from datetime import date
+from datetime import date, datetime
+from tkcalendar import DateEntry
 
 import database
 
@@ -83,7 +84,7 @@ def pridat_jednorazovou(parent):
     gui_style = ttk.Style()
     gui_style.configure('Ticket.TButton', background='slate gray', font=('Arial', 14))
     gui_style.configure('Ticket.TFrame', background='light blue')
-    gui_style.configure('Ticket.TLabel', background='light blue')
+    gui_style.configure('Ticket.TLabel', background='light blue', font=('Arial', 12))
 
     frame = ttk.Frame(
         okno,
@@ -121,8 +122,10 @@ def pridat_jednorazovou(parent):
         style='Ticket.TLabel'
     ).pack(anchor='w')
 
-    datum = ttk.Entry(frame)
-    datum.insert(0, date.today().isoformat())
+    datum = DateEntry(
+        frame,
+        date_pattern='yyyy-mm-dd'
+    )
     datum.pack(fill='x', pady=(2, 10))
 
     ttk.Label(
@@ -185,6 +188,41 @@ def pridat_jednorazovou(parent):
         okno.destroy()
         parent.deiconify()
 
+    def ulozit():
+        if not all([
+            dopravce.get(),
+            datum.get(),
+            cas_od.get(),
+            odkud.get(),
+            kam.get(),
+            vlak.get()
+        ]):
+            return
+
+        try:
+            datetime.strptime(datum.get(), '%Y-%m-%d')
+        except ValueError:
+            return
+
+        try:
+            datetime.strptime(cas_od.get(), '%H:%M')
+        except ValueError:
+            return
+
+        database.pridat_jednorazovou(
+            dopravce.get(),
+            datum.get(),
+            cas_od.get(),
+            odkud.get(),
+            kam.get(),
+            vlak.get(),
+            misto.get() or None,
+            None
+        )
+
+        okno.destroy()
+        parent.deiconify()
+
     ttk.Button(
         buttons,
         style='Ticket.TButton',
@@ -195,7 +233,8 @@ def pridat_jednorazovou(parent):
     ttk.Button(
         buttons,
         style='Ticket.TButton',
-        text='Uložit'
+        text='Uložit',
+        command=ulozit
     ).pack(side='right', padx=5)
 
 def pridat_casovou(parent):
