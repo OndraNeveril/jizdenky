@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from datetime import date, datetime
 from tkcalendar import DateEntry
 
@@ -60,18 +60,27 @@ def start():
 
     seznam = ttk.Treeview(
         home,
-        columns=('dopravce', 'datum', 'vlak'),
+        columns=('dopravce', 'datum', 'vlak', 'kam'),
         show='headings'
     )
+
+    seznam.column('dopravce', width=90, anchor='center', stretch=False)
+    seznam.column('datum', width=160, stretch=False)
+    seznam.column('vlak', width=90, anchor='center', stretch=False)
+    seznam.column('kam', width=120, stretch=False)
 
     seznam.heading('dopravce', text='dopravce')
     seznam.heading('datum', text='datum')
     seznam.heading('vlak', text='vlak')
+    seznam.heading('kam', text='cíl')
 
     for jizdenka in database.get_jednorazove():
-        seznam.insert('', 'end', values=(
-            jizdenka[1], f'{datetime.strptime(jizdenka[2], "%Y-%m-%d").strftime("%d. %m. %Y")}    {jizdenka[3]}', jizdenka[6]
-        ))
+        seznam.insert('','end', iid=str(jizdenka[0]),
+            values=(
+                jizdenka[1],
+                f'{datetime.strptime(jizdenka[2], "%Y-%m-%d").strftime("%d. %m. %Y")}    {jizdenka[3]}',
+                jizdenka[6], jizdenka[5]
+            ))
 
     seznam.pack()
 
@@ -84,19 +93,31 @@ def start():
 
     seznam2 = ttk.Treeview(
         home,
-        columns=('dopravce', 'zacatek', 'konec'),
+        columns=('dopravce', 'zacatek', 'konec', 'zony'),
         show='headings'
     )
+
+    seznam2.column('dopravce', width=75, anchor='center', stretch=False)
+    seznam2.column('zacatek', width=150, stretch=False)
+    seznam2.column('konec', width=150, stretch=False)
+    seznam2.column('zony', width=100, stretch=False)
 
     seznam2.heading('dopravce', text='dopravce')
     seznam2.heading('zacatek', text='začátek')
     seznam2.heading('konec', text='konec')
+    seznam2.heading('zony', text='zóny')
 
     for jizdenka in database.get_casove():
-        seznam2.insert('', 'end', values=(
-            jizdenka[1], f'{datetime.strptime(jizdenka[2], "%Y-%m-%d").strftime("%d. %m. %Y")}    {jizdenka[3]}', f'{datetime.strptime(jizdenka[4], "%Y-%m-%d").strftime("%d. %m. %Y")}    {jizdenka[5]}'))
+        seznam2.insert('', 'end', iid=str(jizdenka[0]), values=(
+            jizdenka[1], f'{datetime.strptime(jizdenka[2], "%Y-%m-%d").strftime("%d. %m. %Y")}    {jizdenka[3]}', f'{datetime.strptime(jizdenka[4], "%Y-%m-%d").strftime("%d. %m. %Y")}    {jizdenka[5]}', jizdenka[6]))
 
     seznam2.pack()
+
+    seznam.bind('<Double-1>', lambda event: upravit_jednorazovou(root, seznam))
+    seznam2.bind('<Double-1>', lambda event: upravit_casovou(root, seznam2))
+
+    seznam.bind('<Delete>', lambda event: smazat_jednorazovou(seznam))
+    seznam2.bind('<Delete>', lambda event: smazat_casovou(seznam2))
 
     root.mainloop()
 
@@ -434,5 +455,56 @@ def pridat_casovou(parent):
         command=ulozit
     ).pack(side='right', padx=5)
 
-if __name__ == '__main__':
-    start()
+def upravit_jednorazovou(parent, seznam):
+    vybrane = seznam.selection()
+
+    if not vybrane:
+        return
+
+    id = int(vybrane[0])
+
+    print(id)
+
+def upravit_casovou(parent, seznam):
+    vybrane = seznam.selection()
+
+    if not vybrane:
+        return
+
+    id = int(vybrane[0])
+
+    print(id)
+
+def smazat_jednorazovou(seznam):
+    vybrane = seznam.selection()
+
+    if not vybrane:
+        return
+
+    id = int(vybrane[0])
+
+    if not messagebox.askyesno(
+        'Smazat jízdenku',
+        'Opravdu chcete tuto jízdenku smazat?'
+    ):
+        return
+
+    database.smazat_jednorazovou(id)
+    seznam.delete(vybrane[0])
+
+def smazat_casovou(seznam):
+    vybrane = seznam.selection()
+
+    if not vybrane:
+        return
+
+    id = int(vybrane[0])
+
+    if not messagebox.askyesno(
+        'Smazat jízdenku',
+        'Opravdu chcete tuto jízdenku smazat?'
+    ):
+        return
+
+    database.smazat_casovou(id)
+    seznam.delete(vybrane[0])

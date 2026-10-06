@@ -110,3 +110,49 @@ def get_tickets_for_date(datum):
         ).fetchall()
 
         return jednorazove, casove
+
+def upravit_jednorazovou(id, dopravce, datum, cas_od, odkud, kam, vlak, misto=None, doklad=None):
+    with get_connection() as conn:
+        conn.execute(
+            """
+            UPDATE jednorazove
+            SET dopravce = ?, datum = ?, cas_od = ?, odkud = ?, kam = ?,
+                vlak = ?, misto = ?, doklad = ?
+            WHERE id = ?
+            """,
+            (dopravce, datum, cas_od, odkud, kam, vlak, misto, doklad, id)
+        )
+
+def smazat_jednorazovou(id):
+    with get_connection() as conn:
+        conn.execute(
+            "DELETE FROM tickets WHERE type = ? AND ticket_id = ?",
+            ("jednorazova", id)
+        )
+        conn.execute(
+            "DELETE FROM jednorazove WHERE id = ?",
+            (id,)
+        )
+
+def upravit_casovou(id, ids, datum_od, cas_od, datum_do, cas_do, zony, doklad=None):
+    with get_connection() as conn:
+        conn.execute(
+            """
+            UPDATE casove
+            SET ids = ?, datum_od = ?, cas_od = ?, datum_do = ?,
+                cas_do = ?, zony = ?, doklad = ?
+            WHERE id = ?
+            """,
+            (ids, datum_od, cas_od, datum_do, cas_do, zony, doklad, id)
+        )
+
+def smazat_casovou(id):
+    with get_connection() as conn:
+        conn.execute(
+            "DELETE FROM tickets WHERE type = ? AND ticket_id = ?",
+            ("casova", id)
+        )
+        conn.execute(
+            "DELETE FROM casove WHERE id = ?",
+            (id,)
+        )
