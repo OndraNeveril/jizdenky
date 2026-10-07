@@ -111,6 +111,17 @@ def get_tickets_for_date(datum):
 
         return jednorazove, casove
 
+def get_jednorazova(id):
+    with get_connection() as conn:
+        return conn.execute(
+            """
+            SELECT *
+            FROM jednorazove
+            WHERE id = ?
+            """,
+            (id,)
+        ).fetchone()
+
 def upravit_jednorazovou(id, dopravce, datum, cas_od, odkud, kam, vlak, misto=None, doklad=None):
     with get_connection() as conn:
         conn.execute(
@@ -133,6 +144,17 @@ def smazat_jednorazovou(id):
             "DELETE FROM jednorazove WHERE id = ?",
             (id,)
         )
+
+def get_casova(id):
+    with get_connection() as conn:
+        return conn.execute(
+            """
+            SELECT *
+            FROM casove
+            WHERE id = ?
+            """,
+            (id,)
+        ).fetchone()
 
 def upravit_casovou(id, ids, datum_od, cas_od, datum_do, cas_do, zony, doklad=None):
     with get_connection() as conn:

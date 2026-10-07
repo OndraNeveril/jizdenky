@@ -38,7 +38,7 @@ def start():
         text='Přidat časovou jízdenku',
         style='My.TButton',
         width=25,
-        command=lambda: pridat_casovou(root)
+        command=lambda: pridat_casovou(root, seznam=seznam2)
     ).pack(side='bottom', padx=5, pady=5)
 
     ttk.Button(
@@ -46,7 +46,7 @@ def start():
         text='Přidat jednorázovou jízdenku',
         width=25,
         style='My.TButton',
-        command=lambda: pridat_jednorazovou(root)
+        command=lambda: pridat_jednorazovou(root, seznam=seznam)
     ).pack(side='top', padx=5, pady=5)
 
     # Tabulky s jízdenkami
@@ -60,26 +60,26 @@ def start():
 
     seznam = ttk.Treeview(
         home,
-        columns=('dopravce', 'datum', 'vlak', 'kam'),
+        columns=('dopravce', 'datum', 'kam', 'místo'),
         show='headings'
     )
 
     seznam.column('dopravce', width=90, anchor='center', stretch=False)
     seznam.column('datum', width=160, stretch=False)
-    seznam.column('vlak', width=90, anchor='center', stretch=False)
     seznam.column('kam', width=120, stretch=False)
+    seznam.column('místo', width=90, anchor='center', stretch=False)
 
     seznam.heading('dopravce', text='dopravce')
     seznam.heading('datum', text='datum')
-    seznam.heading('vlak', text='vlak')
     seznam.heading('kam', text='cíl')
+    seznam.heading('místo', text='místo')
 
     for jizdenka in database.get_jednorazove():
         seznam.insert('','end', iid=str(jizdenka[0]),
             values=(
                 jizdenka[1],
                 f'{datetime.strptime(jizdenka[2], "%Y-%m-%d").strftime("%d. %m. %Y")}    {jizdenka[3]}',
-                jizdenka[6], jizdenka[5]
+                jizdenka[5], jizdenka[7]
             ))
 
     seznam.pack()
@@ -121,13 +121,19 @@ def start():
 
     root.mainloop()
 
-def pridat_jednorazovou(parent):
+def pridat_jednorazovou(parent, id=None, seznam=None):
     parent.withdraw()
+
+    jizdenka = database.get_jednorazova(id) if id is not None else None
 
     # Vzhled
 
     okno = tk.Toplevel(parent)
-    okno.title('Přidat jednorázovou jízdenku')
+    okno.title(
+        'Upravit jednorázovou jízdenku'
+        if id is not None
+        else 'Přidat jednorázovou jízdenku'
+    )
     okno.geometry('500x800')
     okno.configure(background='white')
 
@@ -145,7 +151,11 @@ def pridat_jednorazovou(parent):
 
     ttk.Label(
         frame,
-        text='Přidat jednorázovou jízdenku',
+        text=(
+            'Upravit jednorázovou jízdenku'
+            if id is not None
+            else 'Přidat jednorázovou jízdenku'
+        ),
         style='Ticket.TLabel',
         font=('Arial', 18, 'bold')
     ).pack(pady=(10, 25))
@@ -229,6 +239,17 @@ def pridat_jednorazovou(parent):
         style='Ticket.TLabel'
     ).pack(anchor='w')
 
+    if jizdenka is not None:
+        dopravce.set(jizdenka[1])
+        datum.set_date(datetime.strptime(jizdenka[2], '%Y-%m-%d').date())
+        cas_od.insert(0, jizdenka[3])
+        odkud.insert(0, jizdenka[4])
+        kam.insert(0, jizdenka[5])
+        vlak.insert(0, jizdenka[6])
+
+        if jizdenka[7] is not None:
+            misto.insert(0, jizdenka[7])
+
     # Potvrzení/zrušení
 
     buttons = ttk.Frame(frame, style='Ticket.TFrame')
@@ -237,6 +258,12 @@ def pridat_jednorazovou(parent):
     def zrusit():
         okno.destroy()
         parent.deiconify()
+
+    def ukoncit():
+        okno.destroy()
+        parent.destroy()
+
+    okno.protocol('WM_DELETE_WINDOW', ukoncit)
 
     def ulozit():
         if not all([
@@ -259,16 +286,53 @@ def pridat_jednorazovou(parent):
         except ValueError:
             return
 
-        database.pridat_jednorazovou(
-            dopravce.get(),
-            datum.get(),
-            cas_od.get(),
-            odkud.get(),
-            kam.get(),
-            vlak.get(),
-            misto.get() or None,
-            None
-        )
+        if id is None:
+            nove_id = database.pridat_jednorazovou(
+                dopravce.get(),
+                datum.get(),
+                cas_od.get(),
+                odkud.get(),
+                kam.get(),
+                vlak.get(),
+                misto.get() or None,
+                None
+            )
+
+            if seznam is not None:
+                seznam.insert(
+                    '',
+                    'end',
+                    iid=str(nove_id),
+                    values=(
+                        dopravce.get(),
+                        f'{datetime.strptime(datum.get(), "%Y-%m-%d").strftime("%d. %m. %Y")}    {cas_od.get()}',
+                        kam.get(),
+                        misto.get()
+                    )
+                )
+        else:
+            database.upravit_jednorazovou(
+                id,
+                dopravce.get(),
+                datum.get(),
+                cas_od.get(),
+                odkud.get(),
+                kam.get(),
+                vlak.get(),
+                misto.get() or None,
+                None
+            )
+
+            if seznam is not None:
+                seznam.item(
+                    str(id),
+                    values=(
+                        dopravce.get(),
+                        f'{datetime.strptime(datum.get(), "%Y-%m-%d").strftime("%d. %m. %Y")}    {cas_od.get()}',
+                        kam.get(),
+                        misto.get()
+                    )
+                )
 
         okno.destroy()
         parent.deiconify()
@@ -283,17 +347,23 @@ def pridat_jednorazovou(parent):
     ttk.Button(
         buttons,
         style='Ticket.TButton',
-        text='Uložit',
+        text='Uložit změny' if id is not None else 'Uložit',
         command=ulozit
     ).pack(side='right', padx=5)
 
-def pridat_casovou(parent):
+def pridat_casovou(parent, id=None, seznam=None):
     parent.withdraw()
+
+    jizdenka = database.get_casova(id) if id is not None else None
 
     # Vzhled
 
     okno = tk.Toplevel(parent)
-    okno.title('Přidat jednorázovou jízdenku')
+    okno.title(
+        'Upravit časovou jízdenku'
+        if id is not None
+        else 'Přidat časovou jízdenku'
+    )
     okno.geometry('500x800')
     okno.configure(background='white')
 
@@ -311,7 +381,11 @@ def pridat_casovou(parent):
 
     ttk.Label(
         frame,
-        text='Přidat časovou jízdenku',
+        text=(
+            'Upravit časovou jízdenku'
+            if id is not None
+            else 'Přidat časovou jízdenku'
+        ),
         style='Ticket.TLabel',
         font=('Arial', 18, 'bold')
     ).pack(pady=(10, 25))
@@ -320,7 +394,7 @@ def pridat_casovou(parent):
 
     ttk.Label(
         frame,
-        text='Dopravce:',
+        text='IDS:',
         style='Ticket.TLabel'
     ).pack(anchor='w')
 
@@ -389,6 +463,16 @@ def pridat_casovou(parent):
         style='Ticket.TLabel'
     ).pack(anchor='w')
 
+    if jizdenka is not None:
+        dopravce.set(jizdenka[1])
+        datum_od.set_date(datetime.strptime(jizdenka[2], '%Y-%m-%d').date())
+        cas_od.insert(0, jizdenka[3])
+        datum_do.set_date(datetime.strptime(jizdenka[4], '%Y-%m-%d').date())
+        cas_do.insert(0, jizdenka[5])
+
+        if jizdenka[6] is not None:
+            zony.insert(0, jizdenka[6])
+
     # Potvrzení/zrušení
 
     buttons = ttk.Frame(frame, style='Ticket.TFrame')
@@ -398,6 +482,12 @@ def pridat_casovou(parent):
         okno.destroy()
         parent.deiconify()
 
+    def ukoncit():
+        okno.destroy()
+        parent.destroy()
+
+    okno.protocol('WM_DELETE_WINDOW', ukoncit)
+
     def ulozit():
         if not all([
             dopravce.get(),
@@ -405,38 +495,67 @@ def pridat_casovou(parent):
             cas_od.get(),
             datum_do.get(),
             cas_do.get(),
+            zony.get()
         ]):
             return
 
         try:
             datetime.strptime(datum_od.get(), '%Y-%m-%d')
-        except ValueError:
-            return
-
-        try:
             datetime.strptime(datum_do.get(), '%Y-%m-%d')
         except ValueError:
             return
 
         try:
             datetime.strptime(cas_od.get(), '%H:%M')
-        except ValueError:
-            return
-
-        try:
             datetime.strptime(cas_do.get(), '%H:%M')
         except ValueError:
             return
 
-        database.pridat_casovou(
-            dopravce.get(),
-            datum_od.get(),
-            cas_od.get(),
-            datum_do.get(),
-            cas_do.get(),
-            zony.get() or None,
-            None
-        )
+        if id is None:
+            nove_id = database.pridat_casovou(
+                dopravce.get(),
+                datum_od.get(),
+                cas_od.get(),
+                datum_do.get(),
+                cas_do.get(),
+                zony.get() or None,
+                None
+            )
+
+            if seznam is not None:
+                seznam.insert(
+                    '',
+                    'end',
+                    iid=str(nove_id),
+                    values=(
+                        dopravce.get(),
+                        f'{datetime.strptime(datum_od.get(), "%Y-%m-%d").strftime("%d. %m. %Y")}    {cas_od.get()}',
+                        f'{datetime.strptime(datum_do.get(), "%Y-%m-%d").strftime("%d. %m. %Y")}    {cas_do.get()}',
+                        zony.get()
+                    )
+                )
+        else:
+            database.upravit_casovou(
+                id,
+                dopravce.get(),
+                datum_od.get(),
+                cas_od.get(),
+                datum_do.get(),
+                cas_do.get(),
+                zony.get() or None,
+                None
+            )
+
+            if seznam is not None:
+                seznam.item(
+                    str(id),
+                    values=(
+                        dopravce.get(),
+                        f'{datetime.strptime(datum_od.get(), "%Y-%m-%d").strftime("%d. %m. %Y")}    {cas_od.get()}',
+                        f'{datetime.strptime(datum_do.get(), "%Y-%m-%d").strftime("%d. %m. %Y")}    {cas_do.get()}',
+                        zony.get()
+                    )
+                )
 
         okno.destroy()
         parent.deiconify()
@@ -451,29 +570,25 @@ def pridat_casovou(parent):
     ttk.Button(
         buttons,
         style='Ticket.TButton',
-        text='Uložit',
+        text='Uložit změny' if id is not None else 'Uložit',
         command=ulozit
     ).pack(side='right', padx=5)
 
 def upravit_jednorazovou(parent, seznam):
     vybrane = seznam.selection()
-
     if not vybrane:
         return
 
     id = int(vybrane[0])
-
-    print(id)
+    pridat_jednorazovou(parent, id, seznam)
 
 def upravit_casovou(parent, seznam):
     vybrane = seznam.selection()
-
     if not vybrane:
         return
 
     id = int(vybrane[0])
-
-    print(id)
+    pridat_casovou(parent, id, seznam)
 
 def smazat_jednorazovou(seznam):
     vybrane = seznam.selection()
