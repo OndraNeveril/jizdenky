@@ -3,6 +3,8 @@ from tkinter import ttk, messagebox
 from datetime import date, datetime
 from tkcalendar import DateEntry
 from pathlib import Path
+import subprocess
+import sys
 import shutil
 from tkinter import filedialog, messagebox
 
@@ -142,13 +144,59 @@ def detail_jednorazova(parent, seznam, home):
         ('Doklad', jizdenka[8] or '—')
     ]
 
-    for popisek, hodnota in udaje:
+    for popisek, hodnota in udaje[:-2]:
         ttk.Label(
             detail,
             text=f'{popisek}: {hodnota}',
             style='Ticket.TLabel',
             font=('Arial', 16),
             wraplength=440
+        ).pack(anchor='w', pady=6)
+
+    doklad = jizdenka[8]
+
+    def zobrazit_doklad():
+        if not doklad:
+            messagebox.showinfo('Doklad', 'Tato jízdenka nemá přiložený doklad.')
+            return
+
+        cesta = Path(doklad)
+
+        if not cesta.is_file():
+            messagebox.showerror('Chyba dokladu', 'Soubor neexistuje.')
+            return
+
+        if cesta.suffix.lower() not in ('.png', '.pdf'):
+            messagebox.showerror('Chyba dokladu', 'Nepodporovaný formát souboru.')
+            return
+
+        try:
+            if sys.platform.startswith('linux'):
+                subprocess.Popen(['xdg-open', str(cesta)])
+            elif sys.platform == 'win32':
+                import os
+                os.startfile(cesta)
+            elif sys.platform == 'darwin':
+                subprocess.Popen(['open', str(cesta)])
+            else:
+                messagebox.showerror('Chyba dokladu', 'Tento systém není podporován.')
+        except OSError as chyba:
+            messagebox.showerror('Chyba dokladu', str(chyba))
+
+    ttk.Label(
+        detail,
+        text=f'Doklad: {Path(doklad).name}' if doklad else 'Doklad: žádný',
+        style='Ticket.TLabel',
+        font=('Arial', 16),
+        wraplength=440
+    ).pack(anchor='w', pady=6)
+
+    if doklad:
+        ttk.Button(
+            detail,
+            text='Zobrazit doklad',
+            style='Ticket.TButton',
+            command=zobrazit_doklad
         ).pack(anchor='w', pady=6)
 
     buttons = ttk.Frame(detail, style='Ticket.TFrame')
@@ -215,13 +263,59 @@ def detail_casova(parent, seznam, home):
         ('Doklad', jizdenka[7] or '—')
     ]
 
-    for popisek, hodnota in udaje:
+    for popisek, hodnota in udaje[:-2]:
         ttk.Label(
             detail,
             text=f'{popisek}: {hodnota}',
             style='Ticket.TLabel',
             font=('Arial', 16),
             wraplength=440
+        ).pack(anchor='w', pady=6)
+
+    doklad = jizdenka[7]
+
+    def zobrazit_doklad():
+        if not doklad:
+            messagebox.showinfo('Doklad', 'Tato jízdenka nemá přiložený doklad.')
+            return
+
+        cesta = Path(doklad)
+
+        if not cesta.is_file():
+            messagebox.showerror('Chyba dokladu', 'Soubor neexistuje.')
+            return
+
+        if cesta.suffix.lower() not in ('.png', '.pdf'):
+            messagebox.showerror('Chyba dokladu', 'Nepodporovaný formát souboru.')
+            return
+
+        try:
+            if sys.platform.startswith('linux'):
+                subprocess.Popen(['xdg-open', str(cesta)])
+            elif sys.platform == 'win32':
+                import os
+                os.startfile(cesta)
+            elif sys.platform == 'darwin':
+                subprocess.Popen(['open', str(cesta)])
+            else:
+                messagebox.showerror('Chyba dokladu', 'Tento systém není podporován.')
+        except OSError as chyba:
+            messagebox.showerror('Chyba dokladu', str(chyba))
+
+    ttk.Label(
+        detail,
+        text=f'Doklad: {Path(doklad).name}' if doklad else 'Doklad: žádný',
+        style='Ticket.TLabel',
+        font=('Arial', 16),
+        wraplength=440
+    ).pack(anchor='w', pady=6)
+
+    if doklad:
+        ttk.Button(
+            detail,
+            text='Zobrazit doklad',
+            style='Ticket.TButton',
+            command=zobrazit_doklad
         ).pack(anchor='w', pady=6)
 
     buttons = ttk.Frame(detail, style='Ticket.TFrame')
@@ -835,7 +929,6 @@ def pridat_casovou(parent, id=None, seznam=None, home=None):
         command=ulozit
     ).pack(side='right', padx=5)
 
-
 def smazat_jednorazovou(seznam):
     vybrane = seznam.selection()
 
@@ -849,6 +942,16 @@ def smazat_jednorazovou(seznam):
         'Opravdu chcete tuto jízdenku smazat?'
     ):
         return
+
+    jizdenka = database.get_jednorazova(id)
+    doklad = jizdenka[8] if jizdenka is not None else None
+
+    if doklad:
+        try:
+            Path(doklad).unlink(missing_ok=True)
+        except OSError as chyba:
+            messagebox.showerror('Chyba při mazání dokladu', str(chyba))
+            return
 
     database.smazat_jednorazovou(id)
     seznam.delete(vybrane[0])
@@ -866,6 +969,16 @@ def smazat_casovou(seznam):
         'Opravdu chcete tuto jízdenku smazat?'
     ):
         return
+
+    jizdenka = database.get_casova(id)
+    doklad = jizdenka[7] if jizdenka is not None else None
+
+    if doklad:
+        try:
+            Path(doklad).unlink(missing_ok=True)
+        except OSError as chyba:
+            messagebox.showerror('Chyba při mazání dokladu', str(chyba))
+            return
 
     database.smazat_casovou(id)
     seznam.delete(vybrane[0])
