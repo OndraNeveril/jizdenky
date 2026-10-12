@@ -5,19 +5,7 @@ from tkcalendar import DateEntry
 
 import database
 
-def start():
-    root = tk.Tk()
-    root.title('Jízdenky')
-    root.geometry('500x800')
-    root.configure(background='white')
-
-    # Vzhled
-
-    gui_style = ttk.Style()
-    gui_style.configure('My.TButton', background='slate gray', font=('Arial', 14))
-    gui_style.configure('My.TFrame', background='light blue')
-    gui_style.configure('My.TLabel', background='light blue')
-
+def start(root):
     home = ttk.Frame(root, padding=10, style='My.TFrame')
     home.pack(fill='both', expand=True)
 
@@ -38,7 +26,7 @@ def start():
         text='Přidat časovou jízdenku',
         style='My.TButton',
         width=25,
-        command=lambda: pridat_casovou(root, seznam=seznam2)
+        command=lambda: pridat_casovou(root, seznam=seznam2, home=home)
     ).pack(side='bottom', padx=5, pady=5)
 
     ttk.Button(
@@ -46,7 +34,7 @@ def start():
         text='Přidat jednorázovou jízdenku',
         width=25,
         style='My.TButton',
-        command=lambda: pridat_jednorazovou(root, seznam=seznam)
+        command=lambda: pridat_jednorazovou(root, seznam=seznam, home=home)
     ).pack(side='top', padx=5, pady=5)
 
     # Tabulky s jízdenkami
@@ -113,29 +101,22 @@ def start():
 
     seznam2.pack()
 
-    seznam.bind('<Double-1>', lambda event: upravit_jednorazovou(root, seznam))
-    seznam2.bind('<Double-1>', lambda event: upravit_casovou(root, seznam2))
+    seznam.bind('<Double-1>', lambda event: upravit_jednorazovou(root, seznam, home))
+    seznam2.bind('<Double-1>', lambda event: upravit_casovou(root, seznam2, home))
 
     seznam.bind('<Delete>', lambda event: smazat_jednorazovou(seznam))
     seznam2.bind('<Delete>', lambda event: smazat_casovou(seznam2))
 
-    root.mainloop()
-
-def pridat_jednorazovou(parent, id=None, seznam=None):
-    parent.withdraw()
-
+def pridat_jednorazovou(parent, id=None, seznam=None, home=None):
     jizdenka = database.get_jednorazova(id) if id is not None else None
 
     # Vzhled
 
-    okno = tk.Toplevel(parent)
-    okno.title(
-        'Upravit jednorázovou jízdenku'
-        if id is not None
-        else 'Přidat jednorázovou jízdenku'
-    )
-    okno.geometry('500x800')
-    okno.configure(background='white')
+    if home is not None:
+        home.pack_forget()
+
+    okno = ttk.Frame(parent, style='Ticket.TFrame')
+    okno.pack(fill='both', expand=True)
 
     gui_style = ttk.Style()
     gui_style.configure('Ticket.TButton', background='slate gray', font=('Arial', 14))
@@ -257,13 +238,8 @@ def pridat_jednorazovou(parent, id=None, seznam=None):
 
     def zrusit():
         okno.destroy()
-        parent.deiconify()
-
-    def ukoncit():
-        okno.destroy()
-        parent.destroy()
-
-    okno.protocol('WM_DELETE_WINDOW', ukoncit)
+        if home is not None:
+            home.pack(fill='both', expand=True)
 
     def ulozit():
         if not all([
@@ -335,7 +311,8 @@ def pridat_jednorazovou(parent, id=None, seznam=None):
                 )
 
         okno.destroy()
-        parent.deiconify()
+        if home is not None:
+            home.pack(fill='both', expand=True)
 
     ttk.Button(
         buttons,
@@ -351,21 +328,16 @@ def pridat_jednorazovou(parent, id=None, seznam=None):
         command=ulozit
     ).pack(side='right', padx=5)
 
-def pridat_casovou(parent, id=None, seznam=None):
-    parent.withdraw()
-
+def pridat_casovou(parent, id=None, seznam=None, home=None):
     jizdenka = database.get_casova(id) if id is not None else None
 
     # Vzhled
 
-    okno = tk.Toplevel(parent)
-    okno.title(
-        'Upravit časovou jízdenku'
-        if id is not None
-        else 'Přidat časovou jízdenku'
-    )
-    okno.geometry('500x800')
-    okno.configure(background='white')
+    if home is not None:
+        home.pack_forget()
+
+    okno = ttk.Frame(parent, style='Ticket.TFrame')
+    okno.pack(fill='both', expand=True)
 
     gui_style = ttk.Style()
     gui_style.configure('Ticket.TButton', background='slate gray', font=('Arial', 14))
@@ -480,13 +452,8 @@ def pridat_casovou(parent, id=None, seznam=None):
 
     def zrusit():
         okno.destroy()
-        parent.deiconify()
-
-    def ukoncit():
-        okno.destroy()
-        parent.destroy()
-
-    okno.protocol('WM_DELETE_WINDOW', ukoncit)
+        if home is not None:
+            home.pack(fill='both', expand=True)
 
     def ulozit():
         if not all([
@@ -558,7 +525,8 @@ def pridat_casovou(parent, id=None, seznam=None):
                 )
 
         okno.destroy()
-        parent.deiconify()
+        if home is not None:
+            home.pack(fill='both', expand=True)
 
     ttk.Button(
         buttons,
@@ -574,21 +542,21 @@ def pridat_casovou(parent, id=None, seznam=None):
         command=ulozit
     ).pack(side='right', padx=5)
 
-def upravit_jednorazovou(parent, seznam):
+def upravit_jednorazovou(parent, seznam, home=None):
     vybrane = seznam.selection()
     if not vybrane:
         return
 
     id = int(vybrane[0])
-    pridat_jednorazovou(parent, id, seznam)
+    pridat_jednorazovou(parent, id, seznam, home)
 
-def upravit_casovou(parent, seznam):
+def upravit_casovou(parent, seznam, home=None):
     vybrane = seznam.selection()
     if not vybrane:
         return
 
     id = int(vybrane[0])
-    pridat_casovou(parent, id, seznam)
+    pridat_casovou(parent, id, seznam, home)
 
 def smazat_jednorazovou(seznam):
     vybrane = seznam.selection()
