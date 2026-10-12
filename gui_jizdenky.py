@@ -15,7 +15,7 @@ def start(root):
         home,
         style='My.TLabel',
         text='Přidat jízdenku:',
-        font=('Arial', 16, 'bold')
+        font=('Arial', 20, 'bold')
     ).pack(pady=(20, 15))
 
     buttons = ttk.Frame(home, style='My.TFrame')
@@ -101,11 +101,156 @@ def start(root):
 
     seznam2.pack()
 
-    seznam.bind('<Double-1>', lambda event: upravit_jednorazovou(root, seznam, home))
-    seznam2.bind('<Double-1>', lambda event: upravit_casovou(root, seznam2, home))
+    seznam.bind('<Double-1>', lambda event: detail_jednorazova(root, seznam, home))
+    seznam2.bind('<Double-1>', lambda event: detail_casova(root, seznam2, home))
 
-    seznam.bind('<Delete>', lambda event: smazat_jednorazovou(seznam))
-    seznam2.bind('<Delete>', lambda event: smazat_casovou(seznam2))
+def detail_jednorazova(parent, seznam, home):
+    vybrane = seznam.selection()
+    if not vybrane:
+        return
+
+    id = int(vybrane[0])
+    jizdenka = database.get_jednorazova(id)
+
+    gui_style = ttk.Style()
+    gui_style.configure('Ticket.TButton', background='slate gray', font=('Arial', 14))
+    gui_style.configure('Ticket.TFrame', background='light blue')
+    gui_style.configure('Ticket.TLabel', background='light blue', font=('Arial', 12))
+
+    home.pack_forget()
+    detail = ttk.Frame(parent, padding=20, style='Ticket.TFrame')
+    detail.pack(fill='both', expand=True)
+
+    ttk.Label(
+        detail,
+        text='Detail jednorázové jízdenky',
+        style='Ticket.TLabel',
+        font=('Arial', 20, 'bold')
+    ).pack(pady=(10, 25))
+
+    udaje = [
+        ('Dopravce', jizdenka[1]),
+        ('Datum', datetime.strptime(jizdenka[2], '%Y-%m-%d').strftime('%d. %m. %Y')),
+        ('Čas odjezdu', jizdenka[3]),
+        ('Odkud', jizdenka[4]),
+        ('Kam', jizdenka[5]),
+        ('Vlak', jizdenka[6]),
+        ('Místo', jizdenka[7] or '—'),
+        ('Doklad', jizdenka[8] or '—')
+    ]
+
+    for popisek, hodnota in udaje:
+        ttk.Label(
+            detail,
+            text=f'{popisek}: {hodnota}',
+            style='Ticket.TLabel',
+            font=('Arial', 16),
+            wraplength=440
+        ).pack(anchor='w', pady=6)
+
+    buttons = ttk.Frame(detail, style='Ticket.TFrame')
+    buttons.pack(side='bottom', fill='x', pady=(25, 0))
+
+    def zpet():
+        detail.destroy()
+        home.pack(fill='both', expand=True)
+
+    def upravit():
+        detail.destroy()
+        pridat_jednorazovou(parent, id, seznam, home)
+
+    def smazat():
+        seznam.selection_set(str(id))
+        smazat_jednorazovou(seznam)
+        if not seznam.exists(str(id)):
+            detail.destroy()
+            home.pack(fill='both', expand=True)
+
+    ttk.Button(
+        buttons, text='Zpět', style='Ticket.TButton', command=zpet
+    ).pack(side='left', padx=5)
+
+    ttk.Button(
+        buttons, text='Smazat', style='Ticket.TButton', command=smazat
+    ).pack(side='right', padx=5)
+
+    ttk.Button(
+        buttons, text='Upravit', style='Ticket.TButton', command=upravit
+    ).pack(side='right', padx=5)
+
+
+def detail_casova(parent, seznam, home):
+    vybrane = seznam.selection()
+    if not vybrane:
+        return
+
+    id = int(vybrane[0])
+    jizdenka = database.get_casova(id)
+
+    gui_style = ttk.Style()
+    gui_style.configure('Ticket.TButton', background='slate gray', font=('Arial', 14))
+    gui_style.configure('Ticket.TFrame', background='light blue')
+    gui_style.configure('Ticket.TLabel', background='light blue', font=('Arial', 12))
+
+    home.pack_forget()
+    detail = ttk.Frame(parent, padding=20, style='Ticket.TFrame')
+    detail.pack(fill='both', expand=True)
+
+    ttk.Label(
+        detail,
+        text='Detail časové jízdenky',
+        style='Ticket.TLabel',
+        font=('Arial', 20, 'bold')
+    ).pack(pady=(10, 25))
+
+    udaje = [
+        ('IDS', jizdenka[1]),
+        ('Datum od', datetime.strptime(jizdenka[2], '%Y-%m-%d').strftime('%d. %m. %Y')),
+        ('Čas od', jizdenka[3]),
+        ('Datum do', datetime.strptime(jizdenka[4], '%Y-%m-%d').strftime('%d. %m. %Y')),
+        ('Čas do', jizdenka[5]),
+        ('Zóny', jizdenka[6] or '—'),
+        ('Doklad', jizdenka[7] or '—')
+    ]
+
+    for popisek, hodnota in udaje:
+        ttk.Label(
+            detail,
+            text=f'{popisek}: {hodnota}',
+            style='Ticket.TLabel',
+            font=('Arial', 16),
+            wraplength=440
+        ).pack(anchor='w', pady=6)
+
+    buttons = ttk.Frame(detail, style='Ticket.TFrame')
+    buttons.pack(side='bottom', fill='x', pady=(25, 0))
+
+    def zpet():
+        detail.destroy()
+        home.pack(fill='both', expand=True)
+
+    def upravit():
+        detail.destroy()
+        pridat_casovou(parent, id, seznam, home)
+
+    def smazat():
+        seznam.selection_set(str(id))
+        smazat_casovou(seznam)
+        if not seznam.exists(str(id)):
+            detail.destroy()
+            home.pack(fill='both', expand=True)
+
+    ttk.Button(
+        buttons, text='Zpět', style='Ticket.TButton', command=zpet
+    ).pack(side='left', padx=5)
+
+    ttk.Button(
+        buttons, text='Smazat', style='Ticket.TButton', command=smazat
+    ).pack(side='right', padx=5)
+
+    ttk.Button(
+        buttons, text='Upravit', style='Ticket.TButton', command=upravit
+    ).pack(side='right', padx=5)
 
 def pridat_jednorazovou(parent, id=None, seznam=None, home=None):
     jizdenka = database.get_jednorazova(id) if id is not None else None

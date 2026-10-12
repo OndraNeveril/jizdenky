@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 import database
-import gui
-import vyhledavac
+import gui_jizdenky
+import gui_vyhledavac
 
 database.init_db()
 
@@ -21,8 +21,8 @@ obsah.pack(fill='both', expand=True)
 jizdenky = ttk.Frame(obsah, style='My.TFrame')
 vyhledavani = ttk.Frame(obsah, style='My.TFrame')
 
-gui.start(jizdenky)
-vyhledavac.start(vyhledavani)
+gui_jizdenky.start(jizdenky)
+gui_vyhledavac.start(vyhledavani)
 
 lista = ttk.Frame(root, style='My.TFrame')
 lista.pack(side='bottom', fill='x')
