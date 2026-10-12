@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date, datetime
 from tkcalendar import DateEntry
+from pathlib import Path
+import shutil
+from tkinter import filedialog, messagebox
 
 import database
 
@@ -178,7 +181,6 @@ def detail_jednorazova(parent, seznam, home):
         buttons, text='Upravit', style='Ticket.TButton', command=upravit
     ).pack(side='right', padx=5)
 
-
 def detail_casova(parent, seznam, home):
     vybrane = seznam.selection()
     if not vybrane:
@@ -251,6 +253,39 @@ def detail_casova(parent, seznam, home):
     ttk.Button(
         buttons, text='Upravit', style='Ticket.TButton', command=upravit
     ).pack(side='right', padx=5)
+
+def _sprav_doklad(ticket_id, puvodni_doklad, vybrany_doklad, odebrat_doklad):
+    slozka = Path(__file__).parent / "attachments"
+
+    def odstranit_stary():
+        if puvodni_doklad:
+            stary = Path(puvodni_doklad)
+            if not stary.is_absolute():
+                stary = Path(__file__).parent / stary
+            if stary.exists():
+                stary.unlink()
+
+    if vybrany_doklad:
+        zdroj = Path(vybrany_doklad)
+        if zdroj.suffix.lower() not in (".png", ".pdf"):
+            raise ValueError("Povolené formáty dokladu jsou PNG a PDF.")
+        slozka.mkdir(parents=True, exist_ok=True)
+        cil = slozka / f"{ticket_id}{zdroj.suffix.lower()}"
+        if zdroj.resolve() != cil.resolve():
+            shutil.copy2(zdroj, cil)
+        if puvodni_doklad:
+            stary = Path(puvodni_doklad)
+            if not stary.is_absolute():
+                stary = Path(__file__).parent / stary
+            if stary.exists() and stary.resolve() != cil.resolve():
+                stary.unlink()
+        return str(Path("attachments") / cil.name)
+
+    if odebrat_doklad:
+        odstranit_stary()
+        return None
+    return puvodni_doklad
+
 
 def pridat_jednorazovou(parent, id=None, seznam=None, home=None):
     jizdenka = database.get_jednorazova(id) if id is not None else None
@@ -365,6 +400,46 @@ def pridat_jednorazovou(parent, id=None, seznam=None, home=None):
         style='Ticket.TLabel'
     ).pack(anchor='w')
 
+    puvodni_doklad = jizdenka[8] if jizdenka is not None else None
+    vybrany_doklad = [None]
+    odebrat_doklad = [False]
+
+    doklad_label = ttk.Label(
+        frame,
+        text=f"Doklad: {Path(puvodni_doklad).name}" if puvodni_doklad else "Doklad: žádný",
+        style='Ticket.TLabel'
+    )
+    doklad_label.pack(anchor='w', pady=(2, 5))
+
+    def vybrat_doklad():
+        cesta = filedialog.askopenfilename(
+            parent=parent.winfo_toplevel(),
+            title='Vybrat doklad',
+            filetypes=[('Doklady PNG/PDF', '*.png *.pdf'), ('PNG', '*.png'), ('PDF', '*.pdf')]
+        )
+        if cesta:
+            vybrany_doklad[0] = cesta
+            odebrat_doklad[0] = False
+            doklad_label.config(text=f'Doklad: {Path(cesta).name}')
+
+    def odebrat_doklad_z_formulare():
+        vybrany_doklad[0] = None
+        odebrat_doklad[0] = True
+        doklad_label.config(text='Doklad: žádný')
+
+    doklad_buttons = ttk.Frame(frame, style='Ticket.TFrame')
+    doklad_buttons.pack(fill='x', pady=(0, 10))
+
+    ttk.Button(
+        doklad_buttons, text='Vybrat soubor', style='Ticket.TButton',
+        command=vybrat_doklad
+    ).pack(side='left', padx=(0, 5))
+
+    ttk.Button(
+        doklad_buttons, text='Odebrat doklad', style='Ticket.TButton',
+        command=odebrat_doklad_z_formulare
+    ).pack(side='left')
+
     if jizdenka is not None:
         dopravce.set(jizdenka[1])
         datum.set_date(datetime.strptime(jizdenka[2], '%Y-%m-%d').date())
@@ -419,6 +494,21 @@ def pridat_jednorazovou(parent, id=None, seznam=None, home=None):
                 None
             )
 
+            try:
+                doklad_cesta = _sprav_doklad(
+                    nove_id, None, vybrany_doklad[0], odebrat_doklad[0]
+                )
+            except (OSError, ValueError) as chyba:
+                database.smazat_jednorazovou(nove_id)
+                messagebox.showerror('Chyba dokladu', str(chyba))
+                return
+
+            database.upravit_jednorazovou(
+                nove_id, dopravce.get(), datum.get(), cas_od.get(),
+                odkud.get(), kam.get(), vlak.get(), misto.get() or None,
+                doklad_cesta
+            )
+
             if seznam is not None:
                 seznam.insert(
                     '',
@@ -432,16 +522,18 @@ def pridat_jednorazovou(parent, id=None, seznam=None, home=None):
                     )
                 )
         else:
+            try:
+                doklad_cesta = _sprav_doklad(
+                    id, puvodni_doklad, vybrany_doklad[0], odebrat_doklad[0]
+                )
+            except (OSError, ValueError) as chyba:
+                messagebox.showerror('Chyba dokladu', str(chyba))
+                return
+
             database.upravit_jednorazovou(
-                id,
-                dopravce.get(),
-                datum.get(),
-                cas_od.get(),
-                odkud.get(),
-                kam.get(),
-                vlak.get(),
-                misto.get() or None,
-                None
+                id, dopravce.get(), datum.get(), cas_od.get(),
+                odkud.get(), kam.get(), vlak.get(), misto.get() or None,
+                doklad_cesta
             )
 
             if seznam is not None:
@@ -580,6 +672,46 @@ def pridat_casovou(parent, id=None, seznam=None, home=None):
         style='Ticket.TLabel'
     ).pack(anchor='w')
 
+    puvodni_doklad = jizdenka[7] if jizdenka is not None else None
+    vybrany_doklad = [None]
+    odebrat_doklad = [False]
+
+    doklad_label = ttk.Label(
+        frame,
+        text=f"Doklad: {Path(puvodni_doklad).name}" if puvodni_doklad else "Doklad: žádný",
+        style='Ticket.TLabel'
+    )
+    doklad_label.pack(anchor='w', pady=(2, 5))
+
+    def vybrat_doklad():
+        cesta = filedialog.askopenfilename(
+            parent=parent.winfo_toplevel(),
+            title='Vybrat doklad',
+            filetypes=[('Doklady PNG/PDF', '*.png *.pdf'), ('PNG', '*.png'), ('PDF', '*.pdf')]
+        )
+        if cesta:
+            vybrany_doklad[0] = cesta
+            odebrat_doklad[0] = False
+            doklad_label.config(text=f'Doklad: {Path(cesta).name}')
+
+    def odebrat_doklad_z_formulare():
+        vybrany_doklad[0] = None
+        odebrat_doklad[0] = True
+        doklad_label.config(text='Doklad: žádný')
+
+    doklad_buttons = ttk.Frame(frame, style='Ticket.TFrame')
+    doklad_buttons.pack(fill='x', pady=(0, 10))
+
+    ttk.Button(
+        doklad_buttons, text='Vybrat soubor', style='Ticket.TButton',
+        command=vybrat_doklad
+    ).pack(side='left', padx=(0, 5))
+
+    ttk.Button(
+        doklad_buttons, text='Odebrat doklad', style='Ticket.TButton',
+        command=odebrat_doklad_z_formulare
+    ).pack(side='left')
+
     if jizdenka is not None:
         dopravce.set(jizdenka[1])
         datum_od.set_date(datetime.strptime(jizdenka[2], '%Y-%m-%d').date())
@@ -634,6 +766,20 @@ def pridat_casovou(parent, id=None, seznam=None, home=None):
                 None
             )
 
+            try:
+                doklad_cesta = _sprav_doklad(
+                    nove_id, None, vybrany_doklad[0], odebrat_doklad[0]
+                )
+            except (OSError, ValueError) as chyba:
+                database.smazat_casovou(nove_id)
+                messagebox.showerror('Chyba dokladu', str(chyba))
+                return
+
+            database.upravit_casovou(
+                nove_id, dopravce.get(), datum_od.get(), cas_od.get(),
+                datum_do.get(), cas_do.get(), zony.get() or None, doklad_cesta
+            )
+
             if seznam is not None:
                 seznam.insert(
                     '',
@@ -647,15 +793,17 @@ def pridat_casovou(parent, id=None, seznam=None, home=None):
                     )
                 )
         else:
+            try:
+                doklad_cesta = _sprav_doklad(
+                    id, puvodni_doklad, vybrany_doklad[0], odebrat_doklad[0]
+                )
+            except (OSError, ValueError) as chyba:
+                messagebox.showerror('Chyba dokladu', str(chyba))
+                return
+
             database.upravit_casovou(
-                id,
-                dopravce.get(),
-                datum_od.get(),
-                cas_od.get(),
-                datum_do.get(),
-                cas_do.get(),
-                zony.get() or None,
-                None
+                id, dopravce.get(), datum_od.get(), cas_od.get(),
+                datum_do.get(), cas_do.get(), zony.get() or None, doklad_cesta
             )
 
             if seznam is not None:
@@ -687,21 +835,6 @@ def pridat_casovou(parent, id=None, seznam=None, home=None):
         command=ulozit
     ).pack(side='right', padx=5)
 
-def upravit_jednorazovou(parent, seznam, home=None):
-    vybrane = seznam.selection()
-    if not vybrane:
-        return
-
-    id = int(vybrane[0])
-    pridat_jednorazovou(parent, id, seznam, home)
-
-def upravit_casovou(parent, seznam, home=None):
-    vybrane = seznam.selection()
-    if not vybrane:
-        return
-
-    id = int(vybrane[0])
-    pridat_casovou(parent, id, seznam, home)
 
 def smazat_jednorazovou(seznam):
     vybrane = seznam.selection()
