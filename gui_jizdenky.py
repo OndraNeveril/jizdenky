@@ -11,25 +11,25 @@ from tkinter import filedialog, messagebox
 import database
 
 def start(root):
-    home = ttk.Frame(root, padding=10, style='My.TFrame')
+    home = ttk.Frame(root, padding=10, style='Jizd.TFrame')
     home.pack(fill='both', expand=True)
 
     # Tlačítka přidání jízdenek
 
     ttk.Label(
         home,
-        style='My.TLabel',
+        style='Jizd.TLabel',
         text='Přidat jízdenku:',
         font=('Arial', 20, 'bold')
     ).pack(pady=(20, 15))
 
-    buttons = ttk.Frame(home, style='My.TFrame')
+    buttons = ttk.Frame(home, style='Jizd.TFrame')
     buttons.pack()
 
     ttk.Button(
         buttons,
         text='Přidat časovou jízdenku',
-        style='My.TButton',
+        style='Jizd.TButton',
         width=25,
         command=lambda: pridat_casovou(root, seznam=seznam2, home=home)
     ).pack(side='bottom', padx=5, pady=5)
@@ -38,7 +38,7 @@ def start(root):
         buttons,
         text='Přidat jednorázovou jízdenku',
         width=25,
-        style='My.TButton',
+        style='Jizd.TButton',
         command=lambda: pridat_jednorazovou(root, seznam=seznam, home=home)
     ).pack(side='top', padx=5, pady=5)
 
@@ -46,7 +46,7 @@ def start(root):
 
     ttk.Label(
         home,
-        style='My.TLabel',
+        style='Jizd.TLabel',
         text='Jízdenky',
         font=('Arial', 20, 'bold')
     ).pack(pady=(40, 25))
@@ -79,7 +79,7 @@ def start(root):
 
     ttk.Label(
         home,
-        style='My.TLabel',
+        style='Jizd.TLabel',
         text='Časové jízdenky',
         font=('Arial', 20, 'bold')
     ).pack(pady=(40, 25))
@@ -703,7 +703,7 @@ def pridat_casovou(parent, id=None, seznam=None, home=None):
 
     dopravce = ttk.Combobox(
         frame,
-        values=['PID'],
+        values=['PID', 'jiný'],
         state='readonly'
     )
     dopravce.current(0)

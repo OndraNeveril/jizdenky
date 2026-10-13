@@ -11,9 +11,15 @@ root.title('Jízdenky')
 root.geometry('500x900')
 
 gui_style = ttk.Style()
-gui_style.configure('My.TButton', background='slate gray', font=('Arial', 14))
-gui_style.configure('My.TFrame', background='light blue')
-gui_style.configure('My.TLabel', background='light blue')
+gui_style.configure('Jizd.TButton', background='SlateGray4', font=('Arial', 14))
+gui_style.configure('Jizd.TFrame', background='light blue')
+gui_style.configure('Jizd.TLabel', background='light blue')
+gui_style.configure('Vyhl.TButton', background='Green3', font=('Arial', 14))
+gui_style.configure('Vyhl.TFrame', background='DarkOliveGreen3')
+gui_style.configure('Vyhl.TLabel', background='DarkOliveGreen3')
+gui_style.configure('lista_jizd.TButton', background='SlateGray4', font=('Arial', 14), foreground='white')
+gui_style.configure('lista_vyhl.TButton', background='Green3', font=('Arial', 14), foreground='white')
+gui_style.configure('lista.TFrame', background='aquamarine4')
 
 obsah = ttk.Frame(root)
 obsah.pack(fill='both', expand=True)
@@ -24,24 +30,24 @@ vyhledavani = ttk.Frame(obsah, style='My.TFrame')
 gui_jizdenky.start(jizdenky)
 gui_vyhledavac.start(vyhledavani)
 
-lista = ttk.Frame(root, style='My.TFrame')
+lista = ttk.Frame(root, style='lista.TFrame')
 lista.pack(side='bottom', fill='x')
 
 ttk.Button(
     lista,
     text='Jízdenky',
-    style='My.TButton',
+    style='lista_jizd.TButton',
     width=20,
     command=lambda: zobrazit(jizdenky)
-).pack(side='left', padx=5, pady=5, expand=True)
+).pack(side='left', pady=20, expand=True)
 
 ttk.Button(
     lista,
     text='Vyhledávač',
-    style='My.TButton',
+    style='lista_vyhl.TButton',
     width=20,
     command=lambda: zobrazit(vyhledavani)
-).pack(side='right', padx=5, pady=5, expand=True)
+).pack(side='right', pady=20, expand=True)
 
 def zobrazit(ramec):
     jizdenky.pack_forget()
