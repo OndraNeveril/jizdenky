@@ -2,3 +2,7 @@ __pycache__
 .idea
 attachments/
 data/database.db
+.buildozer/
+bin/
+venv-kivy/
+*.log
