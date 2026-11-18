@@ -16,6 +16,7 @@ import database
 
 
 BARVA_TEXTU = (0.15, 0.2, 0.25, 1)
+BARVA_TEXTU2 = (0.9, 0.9, 0.9, 1)
 BARVA_TLACITKA = (0.25, 0.35, 0.45, 1)
 
 
@@ -236,7 +237,7 @@ class JizdenkyScreen(Screen):
             Label(
                 text=popisek,
                 font_size=sp(14),
-                color=BARVA_TEXTU,
+                color=BARVA_TEXTU2,
                 size_hint_y=None,
                 height=dp(28),
                 halign="left",
@@ -298,7 +299,7 @@ class JizdenkyScreen(Screen):
                 text=nazev,
                 font_size=sp(20),
                 bold=True,
-                color=BARVA_TEXTU,
+                color=BARVA_TEXTU2,
                 size_hint_y=None,
                 height=dp(50)
             )
@@ -331,8 +332,9 @@ class JizdenkyScreen(Screen):
             pole["datum"] = self.pridat_pole(
                 formular,
                 "Datum",
-                jizdenka[2] if jizdenka else datetime.today().strftime("%Y-%m-%d"),
-                "RRRR-MM-DD"
+                datetime.strptime(jizdenka[2], "%Y-%m-%d").strftime("%d. %m. %Y")
+                if jizdenka else datetime.today().strftime("%d. %m. %Y"),
+                "DD. MM. RRRR"
             )
             pole["cas_od"] = self.pridat_pole(
                 formular,
@@ -386,8 +388,9 @@ class JizdenkyScreen(Screen):
             pole["datum_od"] = self.pridat_pole(
                 formular,
                 "Datum od",
-                jizdenka[2] if jizdenka else datetime.today().strftime("%Y-%m-%d"),
-                "RRRR-MM-DD"
+                datetime.strptime(jizdenka[2], "%Y-%m-%d").strftime("%d. %m. %Y")
+                if jizdenka else datetime.today().strftime("%d. %m. %Y"),
+                "DD. MM. RRRR"
             )
             pole["cas_od"] = self.pridat_pole(
                 formular,
@@ -398,8 +401,9 @@ class JizdenkyScreen(Screen):
             pole["datum_do"] = self.pridat_pole(
                 formular,
                 "Datum do",
-                jizdenka[4] if jizdenka else datetime.today().strftime("%Y-%m-%d"),
-                "RRRR-MM-DD"
+                datetime.strptime(jizdenka[4], "%Y-%m-%d").strftime("%d. %m. %Y")
+                if jizdenka else datetime.today().strftime("%d. %m. %Y"),
+                "DD. MM. RRRR"
             )
             pole["cas_do"] = self.pridat_pole(
                 formular,
@@ -458,7 +462,7 @@ class JizdenkyScreen(Screen):
                     )):
                         raise ValueError("Vyplň všechna povinná pole.")
 
-                    datetime.strptime(hodnoty["datum"], "%Y-%m-%d")
+                    hodnoty["datum"] = datetime.strptime(hodnoty["datum"], "%d. %m. %Y").strftime("%Y-%m-%d")
                     datetime.strptime(hodnoty["cas_od"], "%H:%M")
 
                     if ticket_id is None:
@@ -499,8 +503,14 @@ class JizdenkyScreen(Screen):
                     if not all(hodnoty.values()):
                         raise ValueError("Vyplň všechna pole.")
 
-                    datetime.strptime(hodnoty["datum_od"], "%Y-%m-%d")
-                    datetime.strptime(hodnoty["datum_do"], "%Y-%m-%d")
+                    hodnoty["datum_od"] = datetime.strptime(
+                        hodnoty["datum_od"], "%d. %m. %Y"
+                    ).strftime("%Y-%m-%d")
+
+                    hodnoty["datum_do"] = datetime.strptime(
+                        hodnoty["datum_do"], "%d. %m. %Y"
+                    ).strftime("%Y-%m-%d")
+
                     datetime.strptime(hodnoty["cas_od"], "%H:%M")
                     datetime.strptime(hodnoty["cas_do"], "%H:%M")
 
@@ -561,9 +571,13 @@ class JizdenkyScreen(Screen):
     def zobrazit_detail(self, typ, ticket_id):
         if typ == "jednorazova":
             jizdenka = database.get_jednorazova(ticket_id)
+            datum = datetime.strptime(
+                jizdenka[2], "%Y-%m-%d"
+            ).strftime("%d. %m. %Y")
+
             udaje = [
                 ("Dopravce", jizdenka[1]),
-                ("Datum", jizdenka[2]),
+                ("Datum", datum),
                 ("Čas odjezdu", jizdenka[3]),
                 ("Odkud", jizdenka[4]),
                 ("Kam", jizdenka[5]),
@@ -573,11 +587,18 @@ class JizdenkyScreen(Screen):
             ]
         else:
             jizdenka = database.get_casova(ticket_id)
+            datum_od = datetime.strptime(
+                jizdenka[2], "%Y-%m-%d"
+            ).strftime("%d. %m. %Y")
+
+            datum_do = datetime.strptime(
+                jizdenka[4], "%Y-%m-%d"
+            ).strftime("%d. %m. %Y")
             udaje = [
                 ("IDS", jizdenka[1]),
-                ("Datum od", jizdenka[2]),
+                ("Datum od", datum_od),
                 ("Čas od", jizdenka[3]),
-                ("Datum do", jizdenka[4]),
+                ("Datum do", datum_do),
                 ("Čas do", jizdenka[5]),
                 ("Zóny", jizdenka[6]),
                 ("Doklad", "Přiložen" if jizdenka[7] else "Žádný")
@@ -606,7 +627,7 @@ class JizdenkyScreen(Screen):
                 ),
                 font_size=sp(20),
                 bold=True,
-                color=BARVA_TEXTU,
+                color=BARVA_TEXTU2,
                 size_hint_y=None,
                 height=dp(50)
             )
@@ -617,7 +638,7 @@ class JizdenkyScreen(Screen):
                 Label(
                     text=f"{popisek}: {hodnota}",
                     font_size=sp(16),
-                    color=BARVA_TEXTU,
+                    color=BARVA_TEXTU2,
                     size_hint_y=None,
                     height=dp(35),
                     halign="left",
@@ -660,8 +681,78 @@ class JizdenkyScreen(Screen):
 
         upravit.bind(on_release=otevrit_upravu)
 
+        smazat = Button(
+            text="Smazat",
+            background_normal="",
+            background_color=(0.75, 0.2, 0.2, 1)
+        )
+
+        def otevrit_potvrzeni(instance):
+            obsah_potvrzeni = BoxLayout(
+                orientation="vertical",
+                padding=dp(15),
+                spacing=dp(10)
+            )
+
+            obsah_potvrzeni.add_widget(
+                Label(
+                    text="Opravdu chceš tuto jízdenku smazat?",
+                    color=BARVA_TEXTU2,
+                    font_size=sp(16)
+                )
+            )
+
+            tlacitka_potvrzeni = BoxLayout(
+                orientation="horizontal",
+                spacing=dp(10),
+                size_hint_y=None,
+                height=dp(50)
+            )
+
+            potvrzeni = Popup(
+                title="Smazat jízdenku",
+                content=obsah_potvrzeni,
+                size_hint=(0.9, 0.35),
+                auto_dismiss=False
+            )
+
+            def potvrdit_smazani(instance):
+                if typ == "jednorazova":
+                    database.smazat_jednorazovou(ticket_id)
+                else:
+                    database.smazat_casovou(ticket_id)
+
+                potvrzeni.dismiss()
+                popup.dismiss()
+                self.nacist_jizdenky()
+
+            zrusit = Button(
+                text="Zrušit",
+                background_normal="",
+                background_color=(0.45, 0.45, 0.45, 1)
+            )
+            zrusit.bind(
+                on_release=lambda instance: potvrzeni.dismiss()
+            )
+
+            ano = Button(
+                text="Smazat",
+                background_normal="",
+                background_color=(0.75, 0.2, 0.2, 1)
+            )
+            ano.bind(on_release=potvrdit_smazani)
+
+            tlacitka_potvrzeni.add_widget(zrusit)
+            tlacitka_potvrzeni.add_widget(ano)
+            obsah_potvrzeni.add_widget(tlacitka_potvrzeni)
+
+            potvrzeni.open()
+
+        smazat.bind(on_release=otevrit_potvrzeni)
+
         tlacitka.add_widget(zpet)
         tlacitka.add_widget(upravit)
+        tlacitka.add_widget(smazat)
         obsah.add_widget(tlacitka)
 
         popup.open()
